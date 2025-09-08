@@ -1,56 +1,79 @@
-name: Build and Publish Docker Image
+name: Create and publish a Docker image
 
 on:
   push:
-    branches:
-      - main
-      - develop
-  pull_request:
+    branches: ['main', 'develop']
   release:
     types: [published]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  docker:
+  build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      attestations: write
+      id-token: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Read VERSION file
         id: version
         run: echo "VERSION=$(cat VERSION)" >> $GITHUB_ENV
 
-      - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+      # ✅ Ensure GitHub release tag matches VERSION file
+      - name: Verify release tag matches VERSION
+        if: github.event_name == 'release'
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"   # strip leading 'v' if present
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "❌ Mismatch: GitHub release tag ($TAG) != VERSION file ($VERSION)"
+            exit 1
+          fi
+          echo "✅ Version check passed: $TAG"
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Branch builds (main & develop)
-      - name: Build and push branch image
-        if: github.event_name == 'push'
-        uses: docker/build-push-action@v6
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          context: .
-          push: true
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            # Always tag with commit SHA
+            type=sha
 
-      # Release builds (version + stable + latest)
-      - name: Build and push release image
-        if: github.event_name == 'release'
-        uses: docker/build-push-action@v6
+            # Branch builds
+            type=ref,event=branch
+
+            # Release builds (only if VERSION matches release tag)
+            type=raw,value=${{ env.VERSION }}
+            type=raw,value=stable
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: .
           push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ env.VERSION }}
-            ghcr.io/${{ github.repository }}:stable
-            ghcr.io/${{ github.repository }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true

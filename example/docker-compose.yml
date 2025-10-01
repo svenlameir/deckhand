@@ -1,0 +1,10 @@
+services:
+  cleanup:
+    image: ghcr.io/svenlameir/deckhand:latest
+    environment:
+      - IMAGE_AGE=24h
+      - RUN_INTERVAL=2h
+      - TZ=Euope/Amsterdam
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped

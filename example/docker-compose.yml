@@ -1,6 +1,6 @@
 services:
   cleanup:
-    image: ghcr.io/svenlameir/deckhand:latest
+    image: svenlameir/deckhand:latest
     environment:
       - IMAGE_AGE=24h
       - RUN_INTERVAL=2h

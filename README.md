@@ -1,4 +1,7 @@
-# Docker Cleanup Container
+# 🧹 Deckhand – Automated Docker Cleanup
+
+![Docker Pulls](https://img.shields.io/docker/pulls/svenlameir/deckhand)
+![Docker Stars](https://img.shields.io/docker/stars/svenlameir/deckhand)
 
 This project provides a Docker container that removes old Docker images from the host system to free up space. The cleanup interval and image age are configurable via environment variables.
 
@@ -11,11 +14,11 @@ This project provides a Docker container that removes old Docker images from the
 
 ### Run the Container
 ```sh
-docker run -e IMAGE_AGE=24h -e RUN_INTERVAL=2h -e TZ=Euope/Amsterdam -v /var/run/docker.sock:/var/run/docker.sock --restart unless-stopped ghcr.io/svenlameir/deckhand:latest
+docker run -e IMAGE_AGE=24h -e RUN_INTERVAL=2h -e TZ=Euope/Amsterdam -v /var/run/docker.sock:/var/run/docker.sock --restart unless-stopped svenlameir/deckhand:latest
 ```
 
 - The `IMAGE_AGE` variable sets the age filter for image removal (e.g., `24h`, `48h`).
-- The `RUN_INTERVAL` variable sets the interval between cleanup runs. You can use seconds (e.g., `3600`), minutes (`30m`), hours (`2h`), or days (`1d`).
+- The `RUN_INTERVAL` variable sets the interval between cleanup runs.
 - The Docker socket must be mounted for the container to manage images on the host.
 
 ### Project Structure
@@ -27,7 +30,7 @@ src/
   utils.py           # Utility functions
 ```
 
-#### Supported RUN_INTERVAL Formats
+#### Supported Time Formats
 
 - `3600`   → 3600 seconds (1 hour)
 - `30m`    → 1800 seconds (30 minutes)

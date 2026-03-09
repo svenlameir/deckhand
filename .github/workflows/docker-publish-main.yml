@@ -19,7 +19,7 @@ jobs:
 
       # 1.5 Set up QEMU for multi-arch emulation (important before buildx)
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       # 2. Set up Docker Buildx
       - name: Set up Docker Buildx

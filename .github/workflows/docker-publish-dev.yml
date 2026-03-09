@@ -47,7 +47,7 @@ jobs:
 
       # 6. Build and push production image
       - name: Build and push production image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile
